@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
+    <http:listener-config name="books-system-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="${http.listener.port}" />
+    </http:listener-config>
+    <apikit:config name="books-system-api-config" api="books-system-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <db:config name="Database_Config" doc:name="Database Config" doc:id="a37a895d-8e60-4f98-88d3-e5e216e63ba0" >
+		<db:my-sql-connection host="${database.host}" port="${database.port}" user="${database.user}" password="${secure::database.password}" database="${database.name}" />
+	</db:config>
+	<global-property doc:name="Global Property" doc:id="62226882-d899-4d07-85b0-e33f4d60e9a9" name="env" value="local" />
+	<configuration-properties doc:name="Configuration properties" doc:id="296b6e73-c022-48c3-9613-06f54acb4e84" file="${env}.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="c47b0db6-980b-4230-9844-65e8f9f22b89" file="${env}.yaml" key="books">
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+	<flow name="books-system-api-main">
+        <http:listener config-ref="books-system-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="books-system-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="books-system-api-console">
+        <http:listener config-ref="books-system-api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="books-system-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\updatebooks\(bookId):application\json:books-system-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="bookId">attributes.uriParams.'bookId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="83f1dce6-10fa-4883-8252-a944924569fa" />
+		<db:update doc:name="Update" doc:id="2a3e1d4d-385c-47e8-906a-6936278375bc" config-ref="Database_Config">
+			<db:sql >update books_table set author = :author, country = :country, language = :language, pages = :pages, title = :title, year = :year where id = :id</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'id':payload.id,
+	'author':payload.author,
+	'country':payload.country,
+	'language':payload.language,
+	'pages':payload.pages,
+	'title':payload.title,
+	'year':payload.year
+}]]]></db:input-parameters>
+		</db:update>
+		<logger level="INFO" doc:name="Logger" doc:id="30f4d526-8396-4c9b-9f5b-190fa136f0e1" />
+		<ee:transform doc:name="Transform Message" doc:id="087cf441-b95a-47a2-b0f6-c9cc7842c342" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="delete:\deletebooks\(bookId):books-system-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="bookId">attributes.uriParams.'bookId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <db:delete doc:name="Delete" doc:id="c75d2b2c-a0dc-4666-8313-e76091a24cb7" config-ref="Database_Config">
+			<db:sql >delete from books_table where id = :id</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	id: attributes.uriParams.'bookId'
+}]]]></db:input-parameters>
+		</db:delete>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"No Content"]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\getbooks:books-system-api-config">
+        <set-variable value="#[attributes.headers.author]" doc:name="Set Variable" doc:id="f5b4d34b-3db0-44c6-bb11-7c493adcea4d" variableName="authorVar"/>
+		<choice doc:name="Choice" doc:id="4ef14661-57e3-4683-a0ec-8597825982fc" >
+			<when expression="#[attributes.queryParams.author != null]">
+				<db:select doc:name="Select" doc:id="4bcdd545-8dae-47e8-bd12-ed9f19f62ceb" config-ref="Database_Config">
+					<db:sql >select * from books_table where author = :author</db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	'author':attributes.queryParams.author
+}]]]></db:input-parameters>
+				</db:select>
+			</when>
+			<when expression="#[attributes.queryParams.title != null]">
+				<db:select doc:name="Select" doc:id="6a10108b-0bd3-4259-85bb-f8200d249c52" config-ref="Database_Config">
+					<db:sql >select * from books_table where title = :title</db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	'title':attributes.queryParams.title
+}]]]></db:input-parameters>
+				</db:select>
+			</when>
+			<when expression="#[attributes.queryParams.country != null]">
+				<db:select doc:name="Select" doc:id="e39e589d-d743-4d6c-be22-20fb412d5e09" config-ref="Database_Config">
+					<db:sql >select * from books_table where country = :country</db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	'country':attributes.queryParams.country
+}]]]></db:input-parameters>
+				</db:select>
+			</when>
+			<when expression="#[attributes.queryParams.language != null]">
+				<db:select doc:name="Select" doc:id="037b4350-0a3b-49f1-851c-e01d4a946da8" config-ref="Database_Config">
+					<db:sql >select * from books_table where language = :language</db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	'language':attributes.queryParams.language
+}]]]></db:input-parameters>
+				</db:select>
+			</when>
+			<otherwise >
+				<db:select doc:name="Select" doc:id="90d5e75a-2522-4a5b-9b42-3b90fe07b5fe" config-ref="Database_Config">
+					<db:sql >select * from books_table</db:sql>
+				</db:select>
+			</otherwise>
+		</choice>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\getbooks\(bookId):books-system-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="bookId">attributes.uriParams.'bookId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <db:select doc:name="Select" doc:id="8818210e-befe-4112-9606-6f825672217a" config-ref="Database_Config">
+			<db:sql >select * from books_table where id = :id</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	id: attributes.uriParams.'bookId'
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="7b0ae099-17a2-44d1-88d0-f53b10def848" >
+			<when expression="#[payload.id != null]">
+				<ee:transform doc:name="Transform Message" doc:id="3847aba2-1adb-40a5-8643-4dd4d0c4b7bc" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<raise-error doc:name="Raise error" doc:id="cfc66897-2534-4ca8-82ce-84470a572796" description="Books data not found" type="BOOKS:BOOKS_DATA_NOT_FOUND"/>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="2dd5ae71-92dc-4a5e-82cd-834bd791a36d" type="BOOKS:BOOKS_DATA_NOT_FOUND" >
+				<ee:transform doc:name="Transform Message" doc:id="07ff3910-4fd5-4998-8fdf-44068434717a" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": 404,
+	"message":"Books data not found for this Id."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+    </flow>
+    <flow name="post:\addbooks:application\json:books-system-api-config">
+        <db:insert doc:name="Insert" doc:id="92b06db6-29a8-4af5-8b45-ad541bf20bfd" config-ref="Database_Config">
+			<db:sql >insert into books_table(id, author, country, language, pages, title, year) values (:id, :author, :country, :language, :pages, :title, :year)</db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'id':payload.id,
+	'author':payload.author,
+	'country':payload.country,
+	'language':payload.language,
+	'pages':payload.pages,
+	'title':payload.title,
+	'year':payload.year
+}]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="e23fcd93-51cf-4a0d-abe4-8b98d213734f">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>

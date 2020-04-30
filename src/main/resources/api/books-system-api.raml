@@ -1,0 +1,78 @@
+#%RAML 1.0
+baseUri: https://anypoint.mulesoft.com/mocking/api/v1/links/e92d025f-0bdf-407f-b3ae-87b9f2bdab98/ # 
+title: books-system-api
+version: v1
+mediaType: 
+  - application/json
+types:
+  Locales:
+    enum:
+      - en-US
+      - fr-FR
+      - it-IT  
+traits:
+  booksSearch: !include traits/booksSearch.raml
+
+/getbooks:
+  displayName: Get All Books operation
+  get:
+    is:
+      - booksSearch
+    responses:
+      200:
+        body:
+          application/json:
+            example:
+              !include examples/books.json
+  /{bookId}:
+    displayName: Get Book By Id
+    get:
+      is:
+        - booksSearch
+      responses:
+        200:
+          body:
+            application/json:
+              example:
+                !include examples/books.json
+/addbooks:
+  displayName: Add Books Operation
+  post:
+    is:
+      - booksSearch
+    body:
+      application/json:
+        example:
+          !include examples/books.json
+    responses:
+      201:
+        body:
+          application/json:
+            example:
+              !include examples/books.json
+/updatebooks:
+  displayName: Update Books Operation
+  /{bookId}:
+    put:
+      is:
+        - booksSearch
+      body:
+        application/json:
+          example:
+            !include examples/books.json
+      responses:
+        200:
+          body:
+            application/json:
+              example:
+                !include examples/books.json
+/deletebooks:
+  displayName: Remove books operation
+  /{bookId}:
+    delete:
+      responses:
+        204:
+          body:
+            application/json:
+              example:
+                "No Content"

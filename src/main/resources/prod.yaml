@@ -1,0 +1,14 @@
+#---------------Http Listner Configuration---------------
+http:
+    listener:
+      path: "/api/*"
+      port: "8083"
+      host: "localhost"
+        
+#---------------Database Configuration---------------  
+database:
+  host: "localhost"
+  port: "3306"
+  user: "root"
+  password: "root"
+  name: "test"  

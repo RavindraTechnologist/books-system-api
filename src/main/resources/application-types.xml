@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="books" format="json">
+      <types:shape format="weave" example="api/examples/books.json"><![CDATA[%dw 2.0
+
+type books = {|
+  Books: Array<{|    author: String,     country: String,     language: String,     pages: Number {"typeId": "int"},     title: String,     year: Number {"typeId": "int"}  |}>
+|} {"example": "{\\\"Books\\\":[{\\\"author\\\":\\\"Chinua Achebe\\\",\\\"country\\\":\\\"Nigeria\\\",\\\"language\\\":\\\"English\\\",\\\"pages\\\":209,\\\"title\\\":\\\"Things Fall Apart\\\",\\\"year\\\":1958},{\\\"author\\\":\\\"Chinua Achebe\\\",\\\"country\\\":\\\"Nigeria\\\",\\\"language\\\":\\\"English\\\",\\\"pages\\\":209,\\\"title\\\":\\\"Things Fall Apart\\\",\\\"year\\\":1958}]}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#3847aba2-1adb-40a5-8643-4dd4d0c4b7bc">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="books[]"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#e23fcd93-51cf-4a0d-abe4-8b98d213734f">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="books[]"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#087cf441-b95a-47a2-b0f6-c9cc7842c342">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="books[]"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+</types:mule>

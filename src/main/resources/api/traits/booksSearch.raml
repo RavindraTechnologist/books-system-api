@@ -1,0 +1,30 @@
+#%RAML 1.0 Trait
+queryParameters:
+  author: 
+    type: string
+    required: false
+    example: Ravindra
+  country: 
+    type: string
+    required: false
+    example: India
+  language: 
+    type: string
+    required: false
+    example: Hindi
+  title: 
+    type: string
+    required: false
+    example: Title             
+  sort_direction:
+    type: string
+    default: desc
+    required: false
+  limit:
+    type: integer
+    required: false 
+    default: 50
+  offset:
+    type: integer
+    required: false
+    default: 0
